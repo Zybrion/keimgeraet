@@ -1,6 +1,7 @@
 package com.keimgeraet.pi4keimgeraet.controller;
 
 import com.pi4j.io.gpio.*;
+import java.util.concurrent.TimeUnit;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -11,7 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class KeimgeraetController {
 
-    private static GpioPinDigitalOutput pin;
+    private static GpioPinDigitalOutput pin1; //Wasser
+    private static GpioPinDigitalOutput pin2; //Trommel
+    private static GpioPinDigitalOutput pin3; //Luft
+
     @RequestMapping("/")
     public String greeting()
     {
@@ -22,12 +26,158 @@ public class KeimgeraetController {
     public String light()
     {
 
-        if(pin == null){
+        if(pin1 == null){
             GpioController gpio = GpioFactory.getInstance();
-            pin = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01,"MyLED", PinState.LOW);
+            pin1 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01,"Gpio_1", PinState.LOW);
+            pin2 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_02,"Gpio_2", PinState.LOW);
+            pin3 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_03,"Gpio_3", PinState.LOW);
         }
-        pin.toggle();
+        pin1.toggle();
 
         return "Die LED wurde ein- oder asugeschalten!";
+    }
+
+    @RequestMapping("/initialize")
+    public String Initialize()
+    {
+        if(pin1 == null){
+            GpioController gpio = GpioFactory.getInstance();
+            pin1 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01,"Gpio_1", PinState.LOW);
+            pin2 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_02,"Gpio_2", PinState.LOW);
+            pin3 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_03,"Gpio_3", PinState.LOW);
+        }
+
+        return "Die Pins wurden initialisiert!";
+    }
+
+
+    Thread Phase1WasserThread = new Thread() {
+        public void run() {
+                //Wasser wird 1 Minute gegeben, für 59 Minuten gewartet und das ingesamt 24 mal wiederholt.
+                for (int i = 24; i >= 1; i--) {
+                    pin1.high();
+                    pin2.high();
+                    try {
+                        TimeUnit.MINUTES.sleep(1);
+                    } catch (InterruptedException e) {
+                    }
+                    pin1.low();
+                    pin2.low();
+                    try {
+                        TimeUnit.MINUTES.sleep(59);
+                    } catch (InterruptedException e) {
+                    }
+
+                }
+            }
+    };
+
+    Thread Phase1TrommelThread = new Thread(){
+        public void run() {
+            //72 Mal da 24 Stunden * 60 Minuten = 1440 Minuten -
+            //24 Stunden läuft es insgesamt
+            for (int s = 24; s >= 1; s--) {
+                //4 Mal in der Stunde
+                for (int i = 4; i >= 1; i--) {
+
+                    //45 Sekunden wird die Trommel gedreht
+                    pin2.high();
+                    try {
+                        TimeUnit.SECONDS.sleep(45);
+                    } catch (InterruptedException e) {
+                    }
+                    pin2.low();
+                    // 14 Minuten und 15 Sekunden wird gewartet danach das ganze 3 mal wiederholt
+                    try {
+                        TimeUnit.SECONDS.sleep(855);
+                    } catch (InterruptedException e) {
+                    }
+                }
+            }
+        }
+    };
+
+    Thread Phase2WasserThread = new Thread(){
+        public void run() {
+            //Wasser wird 1 Minute gegeben, für 479 (8 Stunden) Minuten gewartet und das ingesamt 3 mal wiederholt.
+            for (int i = 3; i >= 1; i--) {
+                pin1.high();
+                pin2.high();
+                Phase2LuftThread.run();
+                try {
+                    TimeUnit.MINUTES.sleep(1);
+                } catch (InterruptedException e) {
+                }
+
+                pin1.low();
+                pin2.low();
+                try {
+                    TimeUnit.MINUTES.sleep(479);
+                } catch (InterruptedException e) {
+                }
+            }
+        }
+    };
+
+    Thread Phase2LuftThread = new Thread(){
+        public void run() {
+            try {
+                TimeUnit.MINUTES.sleep(60);
+            } catch (InterruptedException e) {
+            }
+            pin3.high();
+            try {
+                TimeUnit.MINUTES.sleep(30);
+            } catch (InterruptedException e) {
+            }
+            pin3.low();
+        }
+    };
+
+
+    @RequestMapping("/phase1")
+    public String Phase1()
+    {
+        Phase1TrommelThread.run();
+        Phase1WasserThread.run();
+        try{
+            Phase1TrommelThread.join();
+            Phase1WasserThread.join();
+        }
+        catch(InterruptedException e){
+
+        }
+        return "Phase 1 fertig.";
+    }
+
+    @RequestMapping("/phase2")
+    public String Phase2()
+    {
+        Phase2WasserThread.run();
+        Phase1TrommelThread.run();
+        Phase2LuftThread.run();
+
+        try {
+            Phase2WasserThread.join();
+            Phase1TrommelThread.join();
+            Phase2LuftThread.join();
+        }
+        catch(InterruptedException e){
+            
+        }
+        return "Phase 2 fertig.";
+    }
+    @RequestMapping("/phase3")
+    public String Phase3()
+    {
+        return "Phase 3 fertig.";
+    }
+    @RequestMapping("/start")
+    public void start()
+    {
+        Initialize();
+        Phase1();
+        Phase2();
+        Phase3();
     }
 }

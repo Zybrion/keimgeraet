@@ -34,6 +34,8 @@ public class KeimgeraetController {
             pin3 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_03,"Gpio_3", PinState.LOW);
         }
         pin1.toggle();
+        pin2.toggle();
+        pin3.toggle();
 
         return "Die LED wurde ein- oder asugeschalten!";
     }

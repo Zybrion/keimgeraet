@@ -145,10 +145,11 @@ public class KeimgeraetController {
     public String Phase1()
     {
         whereAmI("Ich bin in Phase1() a");
-        Phase1TrommelThread.run();
-        Phase1WasserThread.run();
+        Phase1TrommelThread.start();
+        whereAmI("Ich bin in Phase1() b");
+        Phase1WasserThread.start();
         try{
-            whereAmI("Ich bin in Phase1() b");
+            whereAmI("Ich bin in Phase1() c");
             Phase1TrommelThread.join();
             Phase1WasserThread.join();
         }
@@ -161,9 +162,9 @@ public class KeimgeraetController {
     @RequestMapping("/phase2")
     public String Phase2()
     {
-        Phase2WasserThread.run();
-        Phase1TrommelThread.run();
-        Phase2LuftThread.run();
+        Phase2WasserThread.start();
+        Phase1TrommelThread.start();
+        Phase2LuftThread.start();
 
         try {
             Phase2WasserThread.join();

@@ -19,13 +19,14 @@ public class KeimgeraetController {
     @RequestMapping("/")
     public String greeting()
     {
-        return "Hello World";
+        whereAmI("Ich bin in greeting()");
+        return "Hello World!!!";
     }
 
     @RequestMapping("/light")
     public String light()
     {
-
+        whereAmI("Ich bin in light()");
         if(pin1 == null){
             GpioController gpio = GpioFactory.getInstance();
             pin1 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01,"Gpio_1", PinState.LOW);
@@ -40,11 +41,13 @@ public class KeimgeraetController {
     @RequestMapping("/initialize")
     public String Initialize()
     {
+        whereAmI("Ich bin in initialize() a");
         if(pin1 == null){
             GpioController gpio = GpioFactory.getInstance();
             pin1 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01,"Gpio_1", PinState.LOW);
             pin2 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_02,"Gpio_2", PinState.LOW);
             pin3 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_03,"Gpio_3", PinState.LOW);
+            whereAmI("Ich bin in initialize() b");
         }
 
         return "Die Pins wurden initialisiert!";
@@ -53,12 +56,15 @@ public class KeimgeraetController {
 
     Thread Phase1WasserThread = new Thread() {
         public void run() {
+            whereAmI("Ich bin in Phase1WasserThread() a");
                 //Wasser wird 1 Minute gegeben, für 59 Minuten gewartet und das ingesamt 24 mal wiederholt.
                 for (int i = 24; i >= 1; i--) {
+                    whereAmI("Ich bin in Phase1WasserThread() b");
                     pin1.high();
                     pin2.high();
                     try {
                         TimeUnit.MINUTES.sleep(1);
+                        whereAmI("Ich bin in Phase1WasserThread() c");
                     } catch (InterruptedException e) {
                     }
                     pin1.low();
@@ -138,9 +144,11 @@ public class KeimgeraetController {
     @RequestMapping("/phase1")
     public String Phase1()
     {
+        whereAmI("Ich bin in Phase1() a");
         Phase1TrommelThread.run();
         Phase1WasserThread.run();
         try{
+            whereAmI("Ich bin in Phase1() b");
             Phase1TrommelThread.join();
             Phase1WasserThread.join();
         }
@@ -163,7 +171,7 @@ public class KeimgeraetController {
             Phase2LuftThread.join();
         }
         catch(InterruptedException e){
-            
+
         }
         return "Phase 2 fertig.";
     }
@@ -175,9 +183,17 @@ public class KeimgeraetController {
     @RequestMapping("/start")
     public void start()
     {
+        whereAmI("Ich bin in start() a");
         Initialize();
+        whereAmI("Ich bin in start() b");
         Phase1();
+        whereAmI("Ich bin in start() c");
         Phase2();
         Phase3();
+    }
+
+    public void whereAmI(String x)
+    {
+        System.out.println("Ich bin hier: " + x);
     }
 }

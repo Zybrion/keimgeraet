@@ -82,17 +82,21 @@ public class KeimgeraetController {
         public void run() {
             //72 Mal da 24 Stunden * 60 Minuten = 1440 Minuten -
             //24 Stunden läuft es insgesamt
+            whereAmI("Ich bin in Phase1TrommelThread() a");
             for (int s = 24; s >= 1; s--) {
                 //4 Mal in der Stunde
+                whereAmI("Ich bin in Phase1TrommelThread() b");
                 for (int i = 4; i >= 1; i--) {
-
+                    whereAmI("Ich bin in Phase1TrommelThread() c");
                     //45 Sekunden wird die Trommel gedreht
                     pin2.high();
+                    whereAmI("Ich bin in Phase1TrommelThread() pin müsste leuchten");
                     try {
                         TimeUnit.SECONDS.sleep(45);
                     } catch (InterruptedException e) {
                     }
                     pin2.low();
+                    whereAmI("Ich bin in Phase1TrommelThread() Pin müsste aus sein");
                     // 14 Minuten und 15 Sekunden wird gewartet danach das ganze 3 mal wiederholt
                     try {
                         TimeUnit.SECONDS.sleep(855);

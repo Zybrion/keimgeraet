@@ -15,27 +15,67 @@ public class KeimgeraetController {
     private static GpioPinDigitalOutput pin1; //Wasser
     private static GpioPinDigitalOutput pin2; //Trommel
     private static GpioPinDigitalOutput pin3; //Luft
+    private static GpioPinDigitalOutput pin4; //Wasserstand
+
+    //Variablen für Phase1
+    int p1wDauer = 30;           //Die Dauer, für das das Wasser engeschalten wird. (In Sekunden)
+    int p1wAlleXSekunden = 3600 - p1wDauer;   //Alle x Minuten wird das Wasser eingeschalten. (In Sekunden)
+    int p1wGesDauer = 1440;       //Die Gesamtdauer, wie lange diese Vorgänge stattfinden sollen. (In Minuten)
+    int p1wZyklen = (int)(((p1wGesDauer * 60) / (p1wAlleXSekunden + p1wDauer))); //Anzahl der Zyklen bei denen das Wasser eingeschaltet wird und diese in die Gesamtdauer passt.
+
+    int p1tDauer = 45;          //Dauer, die sich die Trommel dreht (In Sekunden)
+    int p1tAlleXSekunden = 900 - p1tDauer; //Alle X Sekunden läuft die Trommel (Dauer der Trommeldrehung abgezogen) (in Sekunden)
+    int p1tGesDauer = 1440;     //In Minuten
+    int p1tZyklen = (int)((p1tGesDauer * 60) / p1tAlleXSekunden);   //Automatische berechnung der Zyklen
+
+    //Variablen für Phase1
+    int p2wDauer = 60;           //Die Dauer, für das das Wasser engeschalten wird. (In Sekunden)
+    int p2wAlleXSekunden = 28800 - p2wDauer;   //Alle x Minuten wird das Wasser eingeschalten. (In Sekunden)
+    int p2wGesDauer = 4320;       //Die Gesamtdauer, wie lange diese Vorgänge stattfinden sollen. (In Minuten)
+    int p2wZyklen = (int)(((p2wGesDauer * 60) / (p2wAlleXSekunden + p1wDauer))); //Anzahl der Zyklen bei denen das Wasser eingeschaltet wird und diese in die Gesamtdauer passt.
+
+    int p2tDauer = 45;          //Dauer, die sich die Trommel dreht (In Sekunden)
+    int p2tAlleXSekunden = 900 - p1tDauer; //Alle X Sekunden läuft die Trommel (Dauer der Trommeldrehung abgezogen) (in Sekunden)
+    int p2tGesDauer = 4320;     //In Minuten
+    int p2tZyklen = (int)((p2tGesDauer * 60) / p2tAlleXSekunden);   //Automatische berechnung der Zyklen
+
+    int p2lDauer = 1800; //Dauer, wie lange Luft reingelassen wird.
+    int p2lAlleXSekunden = 3600; //Alle X Sekunden wird luft reingelassen
+    int p2lGesDauer = 4320; //Wie lange es insgesamt läuft (in Minuten)
+    int p2lZyklus = (int)((p2lGesDauer * 60) / (p2lAlleXSekunden + p2lDauer)); //Wartedauer UND LuftAnDauer
 
     @RequestMapping("/")
     public String greeting()
     {
-        whereAmI("Ich bin in greeting()");
+        System.out.println("Die Applikation wurde gestartet! Sie befinden sich nun in '/' (root).");
         return "Hello World!!!";
     }
 
     @RequestMapping("/light")
     public String light()
     {
-        whereAmI("Ich bin in light()");
         if(pin1 == null){
             GpioController gpio = GpioFactory.getInstance();
             pin1 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01,"Gpio_1", PinState.LOW);
             pin2 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_02,"Gpio_2", PinState.LOW);
             pin3 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_03,"Gpio_3", PinState.LOW);
+            pin4 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_04, "Gpio 4", PinState.getState(true));
         }
-        pin1.toggle();
-        pin2.toggle();
-        pin3.toggle();
+
+        if(pin1.isLow() || pin2.isLow() || pin3.isLow())
+        {
+            pin1.high();
+            pin2.high();
+            pin3.high();
+            System.out.println("Gpio 1, 2, 3 sind nun an!");
+        }
+        else if(pin1.isHigh() || pin2.isHigh() || pin3.isHigh())
+        {
+            pin1.low();
+            pin2.low();
+            pin3.low();
+            System.out.println("Gpio 1, 2, 3 sind nun aus!");
+        }
 
         return "Die LED wurde ein- oder asugeschalten!";
     }
@@ -43,13 +83,13 @@ public class KeimgeraetController {
     @RequestMapping("/initialize")
     public String Initialize()
     {
-        whereAmI("Ich bin in initialize() a");
         if(pin1 == null){
             GpioController gpio = GpioFactory.getInstance();
             pin1 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01,"Gpio_1", PinState.LOW);
             pin2 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_02,"Gpio_2", PinState.LOW);
             pin3 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_03,"Gpio_3", PinState.LOW);
-            whereAmI("Ich bin in initialize() b");
+            pin4 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_04, "Gpio 4", PinState.getState(true));
+            System.out.println("Gpio 1, 2, 3, 4 wurden initialisiert und sind nun bereit benutzt zu werden");
         }
 
         return "Die Pins wurden initialisiert!";
@@ -58,73 +98,93 @@ public class KeimgeraetController {
 
     Thread Phase1WasserThread = new Thread() {
         public void run() {
-            whereAmI("Ich bin in Phase1WasserThread() a");
-                //Wasser wird 1 Minute gegeben, für 59 Minuten gewartet und das ingesamt 24 mal wiederholt.
-                for (int i = 24; i >= 1; i--) {
-                    whereAmI("Ich bin in Phase1WasserThread() b");
-                    pin1.high();
-                    pin2.high();
+            //Es werden p1wZyklen Zyklen durchlaufen mit  p1wDauer bei der das Wasser läuft | Wasser & Trommel läuft!
+            for (int i = p1wZyklen; i >= 1; i--) {
+                while (pin4.isHigh()) {
                     try {
-                        TimeUnit.MINUTES.sleep(1);
-                        whereAmI("Ich bin in Phase1WasserThread() c");
-                    } catch (InterruptedException e) {
+                        pin1.high();
+                        pin2.high();
+                        try {
+                            System.out.println("Das Wasser wurde für " + p1wDauer + " Sekunden angeschalten!");
+                            TimeUnit.SECONDS.sleep(p1wDauer);
+                        } catch (InterruptedException e) {
+                        }
+                        pin1.low();
+                        pin2.low();
+                        try {
+                            System.out.println("Das Wasser wurde für " + p1wAlleXSekunden + "( ca. " + p1wAlleXSekunden / 60 + " Minuten )" + " Sekunden ausgeschalten!");
+                            TimeUnit.SECONDS.sleep(p1wAlleXSekunden);
+                        } catch (InterruptedException e) {
+                        }
+                    } catch (InternalError e) {
+                        System.out.println("Wasserstand ist zu niedrig! " + e);
                     }
-                    pin1.low();
-                    pin2.low();
-                    try {
-                        TimeUnit.MINUTES.sleep(59);
-                    } catch (InterruptedException e) {
-                    }
-
                 }
+
             }
+        }
     };
 
     Thread Phase1TrommelThread = new Thread(){
         public void run() {
-            //72 Mal da 24 Stunden * 60 Minuten = 1440 Minuten -
-            //24 Stunden läuft es insgesamt
-            whereAmI("Ich bin in Phase1TrommelThread() a");
-            for (int s = 24; s >= 1; s--) {
-                //4 Mal in der Stunde
-                whereAmI("Ich bin in Phase1TrommelThread() b");
-                for (int i = 4; i >= 1; i--) {
-                    whereAmI("Ich bin in Phase1TrommelThread() c");
-                    //45 Sekunden wird die Trommel gedreht
+                for (int i = p1tZyklen; i >= 1; i--) {
                     pin2.high();
-                    whereAmI("Ich bin in Phase1TrommelThread() pin müsste leuchten");
                     try {
-                        TimeUnit.SECONDS.sleep(45);
+                        System.out.println("Die Trommel ist für " + p1tDauer + " Sekunden angeschalten");
+                        TimeUnit.SECONDS.sleep(p1tDauer);
                     } catch (InterruptedException e) {
                     }
                     pin2.low();
-                    whereAmI("Ich bin in Phase1TrommelThread() Pin müsste aus sein");
-                    // 14 Minuten und 15 Sekunden wird gewartet danach das ganze 3 mal wiederholt
                     try {
-                        TimeUnit.SECONDS.sleep(855);
+                        System.out.println("Die Trommel ist für " + p1tAlleXSekunden + "( ca. " + p1tAlleXSekunden/60 + " Minuten )" + " Sekunden ausgeschalten");
+                        TimeUnit.SECONDS.sleep(p1tAlleXSekunden);
                     } catch (InterruptedException e) {
+                    }
+                }
+            }
+    };
+
+    Thread Phase2WasserThread = new Thread(){
+        public void run() {
+            for (int i = p2wZyklen; i >= 1; i--) {
+                while(pin4.isHigh()) {
+                    try {
+                        pin1.high();
+                        pin2.high();
+                        try {
+                            System.out.println("Das Wasser ist für " + p2wDauer + " Sekunden angeschalten");
+                            TimeUnit.SECONDS.sleep(p2wDauer);
+                        } catch (InterruptedException e) {
+                        }
+
+                        pin1.low();
+                        pin2.low();
+                        try {
+                            System.out.println("Das Wasser ist für " + p2wAlleXSekunden + "( ca. " + p2wAlleXSekunden / 60 + " Minuten )" + " Sekunden ausgeschalten");
+                            TimeUnit.SECONDS.sleep(p2wAlleXSekunden);
+                        } catch (InterruptedException e) {
+                        }
+                    } catch (InternalError e){
+                        System.out.println("Der Wasserstand ist zu niedrig! " + e);
                     }
                 }
             }
         }
     };
 
-    Thread Phase2WasserThread = new Thread(){
+    Thread Phase2TrommelThread = new Thread(){
         public void run() {
-            //Wasser wird 1 Minute gegeben, für 479 (8 Stunden) Minuten gewartet und das ingesamt 3 mal wiederholt.
-            for (int i = 3; i >= 1; i--) {
-                pin1.high();
+            for (int i = p2tZyklen; i >= 1; i--) {
                 pin2.high();
-                Phase2LuftThread.run();
                 try {
-                    TimeUnit.MINUTES.sleep(1);
+                    System.out.println("Die Trommel ist für " + p2tDauer + " Sekunden angeschalten");
+                    TimeUnit.SECONDS.sleep(p2tDauer);
                 } catch (InterruptedException e) {
                 }
-
-                pin1.low();
                 pin2.low();
                 try {
-                    TimeUnit.MINUTES.sleep(479);
+                    System.out.println("Die Trommel ist für " + p2tAlleXSekunden + "( ca. " + p2tAlleXSekunden/60 + " Minuten )" + " Sekunden ausgeschalten");
+                    TimeUnit.SECONDS.sleep(p2tAlleXSekunden);
                 } catch (InterruptedException e) {
                 }
             }
@@ -133,16 +193,21 @@ public class KeimgeraetController {
 
     Thread Phase2LuftThread = new Thread(){
         public void run() {
-            try {
-                TimeUnit.MINUTES.sleep(60);
-            } catch (InterruptedException e) {
+            for(int i = p2lZyklus; i >= 1; i--) {
+                pin3.low();
+                try {
+                    System.out.println("Die Luft ist für " + p2lAlleXSekunden + "( ca. " + p2lAlleXSekunden/60 + " Minuten )" + " Sekunden ausgeschalten");
+                    TimeUnit.SECONDS.sleep(p2lAlleXSekunden);
+                } catch (InterruptedException e) {
+                }
+                pin3.high();
+                try {
+                    System.out.println("Die Luft ist für " + p2lDauer + "( ca. " + p2lDauer/60 + " Minuten )" + " Sekunden ausgeschalten");
+                    TimeUnit.SECONDS.sleep(p2lDauer);
+                } catch (InterruptedException e) {
+                }
+                pin3.low();
             }
-            pin3.high();
-            try {
-                TimeUnit.MINUTES.sleep(30);
-            } catch (InterruptedException e) {
-            }
-            pin3.low();
         }
     };
 
@@ -150,12 +215,11 @@ public class KeimgeraetController {
     @RequestMapping("/phase1")
     public String Phase1()
     {
-        whereAmI("Ich bin in Phase1() a");
+        System.out.println("Phase 1 läuft aktuell...");
         Phase1TrommelThread.start();
-        whereAmI("Ich bin in Phase1() b");
         Phase1WasserThread.start();
         try{
-            whereAmI("Ich bin in Phase1() c");
+            System.out.println("Phase 1 wird abgeschlossen!");
             Phase1TrommelThread.join();
             Phase1WasserThread.join();
         }
@@ -168,13 +232,15 @@ public class KeimgeraetController {
     @RequestMapping("/phase2")
     public String Phase2()
     {
+        System.out.println("Phase 1 läuft aktuell...");
         Phase2WasserThread.start();
-        Phase1TrommelThread.start();
+        Phase2TrommelThread.start();
         Phase2LuftThread.start();
 
         try {
+            System.out.println("Phase 1 wird abgeschlossen!");
             Phase2WasserThread.join();
-            Phase1TrommelThread.join();
+            Phase2TrommelThread.join();
             Phase2LuftThread.join();
         }
         catch(InterruptedException e){
@@ -190,11 +256,8 @@ public class KeimgeraetController {
     @RequestMapping("/start")
     public void start()
     {
-        whereAmI("Ich bin in start() a");
         Initialize();
-        whereAmI("Ich bin in start() b");
         Phase1();
-        whereAmI("Ich bin in start() c");
         Phase2();
         Phase3();
     }

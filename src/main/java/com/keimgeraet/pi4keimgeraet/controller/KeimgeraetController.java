@@ -2,6 +2,8 @@ package com.keimgeraet.pi4keimgeraet.controller;
 
 import com.keimgeraet.pi4keimgeraet.Application;
 import com.pi4j.io.gpio.*;
+
+import java.sql.Time;
 import java.util.concurrent.TimeUnit;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -92,10 +94,12 @@ public class KeimgeraetController {
             pin2 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_02,"Gpio_2", PinState.LOW);
             pin3 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_03,"Gpio_3", PinState.LOW);
             pin4 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_04, "Gpio 4", PinState.LOW);
-           // pin1.low();
-            //pin2.low();
-            //pin3.low();
-            //pin4.low();
+            try{TimeUnit.SECONDS.sleep(1);} catch(InterruptedException e){}
+            pin1.low();
+            pin2.low();
+            pin3.low();
+            pin4.low();
+            try{TimeUnit.SECONDS.sleep(1);} catch(InterruptedException e){}
             System.out.println("Gpio 1, 2, 3, 4 wurden initialisiert und sind nun bereit benutzt zu werden");
         }
 
@@ -275,6 +279,7 @@ public class KeimgeraetController {
 
     }
 
+    @RequestMapping ("/exit")
     public void aus()
     {
         pin1.low();

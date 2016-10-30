@@ -1,5 +1,6 @@
 package com.keimgeraet.pi4keimgeraet.controller;
 
+import com.keimgeraet.pi4keimgeraet.Application;
 import com.pi4j.io.gpio.*;
 import java.util.concurrent.TimeUnit;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -251,7 +252,7 @@ public class KeimgeraetController {
             Phase2WasserThread.join();
             Phase2TrommelThread.join();
             //Phase2LuftThread.join();
-            System.out.println("Phase 1 wird abgeschlossen!")
+            System.out.println("Phase 1 wird abgeschlossen!");
         }
         catch(InterruptedException e){
 
@@ -271,8 +272,17 @@ public class KeimgeraetController {
         Phase1();
         Phase2();
         Phase3();
+
     }
 
+    public void aus()
+    {
+        pin1.low();
+        pin2.low();
+        pin3.low();
+        pin4.low();
+        System.exit(0);
+    }
     public void whereAmI(String x)
     {
         System.out.println("Ich bin hier: " + x);

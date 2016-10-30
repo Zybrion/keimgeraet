@@ -90,10 +90,10 @@ public class KeimgeraetController {
     {
         if(pin1 == null){
             GpioController gpio = GpioFactory.getInstance();
-            pin1 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01,"Gpio_1", PinState.LOW );
-            pin2 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_02,"Gpio_2", PinState.LOW);
-            pin3 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_03,"Gpio_3", PinState.LOW);
-            pin4 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_04, "Gpio 4", PinState.LOW);
+            pin1 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01,"Gpio_1", PinState.HIGH);
+            pin2 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_02,"Gpio_2", PinState.HIGH);
+            pin3 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_03,"Gpio_3", PinState.HIGH);
+            pin4 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_04, "Gpio 4", PinState.HIGH);
             try{TimeUnit.SECONDS.sleep(1);} catch(InterruptedException e){}
             pin1.low();
             pin2.low();
@@ -101,6 +101,13 @@ public class KeimgeraetController {
             pin4.low();
             try{TimeUnit.SECONDS.sleep(1);} catch(InterruptedException e){}
             System.out.println("Gpio 1, 2, 3, 4 wurden initialisiert und sind nun bereit benutzt zu werden");
+        }
+        else
+        {
+            pin1.low();
+            pin2.low();
+            pin3.low();
+            pin4.low();
         }
 
         return "Die Pins wurden initialisiert!";

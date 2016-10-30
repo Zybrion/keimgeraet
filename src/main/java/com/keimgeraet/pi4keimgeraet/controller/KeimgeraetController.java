@@ -21,9 +21,9 @@ public class KeimgeraetController {
     private static GpioPinDigitalOutput pin4; //Wasserstand
 
     //Variablen für Phase1
-    int p1wDauer = 20;           //Die Dauer, für das das Wasser engeschalten wird. (In Sekunden)
-    int p1wAlleXSekunden = 1200 - p1wDauer;   //Alle x Minuten wird das Wasser eingeschalten. (In Sekunden)
-    int p1wGesDauer = 720;       //Die Gesamtdauer, wie lange diese Vorgänge stattfinden sollen. (In Minuten)
+    int p1wDauer = 8;           //Die Dauer, für das das Wasser engeschalten wird. (In Sekunden)
+    int p1wAlleXSekunden = 1800 - p1wDauer;   //Alle x Minuten wird das Wasser eingeschalten. (In Sekunden)
+    int p1wGesDauer = 300;       //Die Gesamtdauer, wie lange diese Vorgänge stattfinden sollen. (In Minuten)
     int p1wZyklen = (int)(((p1wGesDauer * 60) / (p1wAlleXSekunden + p1wDauer))); //Anzahl der Zyklen bei denen das Wasser eingeschaltet wird und diese in die Gesamtdauer passt.
 
     int p1tDauer = 45;          //Dauer, die sich die Trommel dreht (In Sekunden)
@@ -32,7 +32,7 @@ public class KeimgeraetController {
     int p1tZyklen = (int)((p1tGesDauer * 60) / p1tAlleXSekunden);   //Automatische berechnung der Zyklen
 
     //Variablen für Phase2
-    int p2wDauer = 15;           //Die Dauer, für das das Wasser engeschalten wird. (In Sekunden)
+    int p2wDauer = 8;           //Die Dauer, für das das Wasser engeschalten wird. (In Sekunden)
     int p2wAlleXSekunden = 21600 - p2wDauer;   //Alle x Minuten wird das Wasser eingeschalten. (In Sekunden)
     int p2wGesDauer = 2880;       //Die Gesamtdauer, wie lange diese Vorgänge stattfinden sollen. (In Minuten)
     int p2wZyklen = (int)(((p2wGesDauer * 60) / (p2wAlleXSekunden + p1wDauer))); //Anzahl der Zyklen bei denen das Wasser eingeschaltet wird und diese in die Gesamtdauer passt.
@@ -44,7 +44,7 @@ public class KeimgeraetController {
 
     int p2lDauer = 1800; //Dauer, wie lange Luft reingelassen wird.
     int p2lAlleXSekunden = 3600; //Alle X Sekunden wird luft reingelassen
-    int p2lGesDauer = 4320; //Wie lange es insgesamt läuft (in Minuten)
+    int p2lGesDauer = 2880; //Wie lange es insgesamt läuft (in Minuten)
     int p2lZyklus = (int)((p2lGesDauer * 60) / (p2lAlleXSekunden + p2lDauer)); //Wartedauer UND LuftAnDauer
 
     @RequestMapping("/")
@@ -122,6 +122,7 @@ public class KeimgeraetController {
                     try {
                         pin1.low();
                         pin2.low();
+                        pin3.low();
                         try {
                             System.out.println("Das Wasser wurde für " + p1wDauer + " Sekunden angeschalten!");
                             TimeUnit.SECONDS.sleep(p1wDauer);
@@ -129,6 +130,7 @@ public class KeimgeraetController {
                         }
                         pin1.high();
                         pin2.high();
+                        pin3.high();
                         try {
                             System.out.println("Das Wasser wurde für " + p1wAlleXSekunden + "( ca. " + p1wAlleXSekunden / 60 + " Minuten )" + " Sekunden ausgeschalten!");
                             TimeUnit.SECONDS.sleep(p1wAlleXSekunden);
@@ -172,7 +174,7 @@ public class KeimgeraetController {
                         try {
                             System.out.println("Das Wasser ist für " + p2wDauer + " Sekunden angeschalten");
                             TimeUnit.SECONDS.sleep((p2wDauer));
-                           // TimeUnit.SECONDS.sleep(p2wDauer - (p2wDauer+3600));
+                            //TimeUnit.SECONDS.sleep(p2wDauer - (p2wDauer+3600));
                             //pin3.high();
                             //TimeUnit.SECONDS.sleep(1800);
                             //pin3.high();
@@ -243,31 +245,31 @@ public class KeimgeraetController {
         try{
             //Phase1TrommelThread.join();
             Phase1WasserThread.join();
-            System.out.println("Phase 1 wird abgeschlossen!");
         }
         catch(InterruptedException e){
 
         }
+        System.out.println("Phase 1 wird abgeschlossen!");
         return "Phase 1 fertig.";
     }
 
     @RequestMapping("/phase2")
     public String Phase2()
     {
-        System.out.println("Phase 1 läuft aktuell...");
+        System.out.println("Phase 2 läuft aktuell...");
         Phase2WasserThread.start();
         Phase2TrommelThread.start();
-        //Phase2LuftThread.start();
+        Phase2LuftThread.start();
 
-        try {;
+        try {
             Phase2WasserThread.join();
             Phase2TrommelThread.join();
-            //Phase2LuftThread.join();
-            System.out.println("Phase 1 wird abgeschlossen!");
+            Phase2LuftThread.join();
         }
         catch(InterruptedException e){
 
         }
+        System.out.println("Phase 2 wird abgeschlossen!");
         return "Phase 2 fertig.";
     }
     @RequestMapping("/phase3")
@@ -282,7 +284,9 @@ public class KeimgeraetController {
         Initialize();
         Phase1();
         Phase2();
-        Phase3();
+        //Phase3();
+        System.out.println("Alle Phase fertig! Fahre Programm herunter");
+        aus();
 
     }
 

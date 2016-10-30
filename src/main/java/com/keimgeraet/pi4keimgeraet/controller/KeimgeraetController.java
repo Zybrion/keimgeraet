@@ -62,7 +62,7 @@ public class KeimgeraetController {
             pin1 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01,"Gpio_1", PinState.LOW);
             pin2 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_02,"Gpio_2", PinState.LOW);
             pin3 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_03,"Gpio_3", PinState.LOW);
-            pin4 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_04, "Gpio 4", PinState.getState(true));
+            pin4 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_04, "Gpio 4", PinState.LOW);
         }
 
         else if(pin1.isLow() || pin2.isLow() || pin3.isLow() || pin4.isLow())
@@ -71,7 +71,7 @@ public class KeimgeraetController {
             pin2.high();
             pin3.high();
             pin4.high();
-            System.out.println("Gpio 1, 2, 3, 4 sind nun an!");
+            System.out.println("Gpio 1, 2, 3, 4 sind nun aus!");
         }
         else if(pin1.isHigh() || pin2.isHigh() || pin3.isHigh() || pin4.isHigh())
         {
@@ -79,7 +79,7 @@ public class KeimgeraetController {
             pin2.low();
             pin3.low();
             pin4.low();
-            System.out.println("Gpio 1, 2, 3, 4 sind nun aus!");
+            System.out.println("Gpio 1, 2, 3, 4 sind nun an!");
         }
 
         return "Die LED wurde ein- oder asugeschalten!";
@@ -90,24 +90,24 @@ public class KeimgeraetController {
     {
         if(pin1 == null){
             GpioController gpio = GpioFactory.getInstance();
-            pin1 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01,"Gpio_1", PinState.HIGH);
-            pin2 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_02,"Gpio_2", PinState.HIGH);
-            pin3 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_03,"Gpio_3", PinState.HIGH);
-            pin4 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_04, "Gpio 4", PinState.HIGH);
+            pin1 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01,"Gpio_1", PinState.LOW);
+            pin2 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_02,"Gpio_2", PinState.LOW);
+            pin3 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_03,"Gpio_3", PinState.LOW);
+            pin4 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_04, "Gpio 4", PinState.LOW);
             try{TimeUnit.SECONDS.sleep(1);} catch(InterruptedException e){}
-            pin1.low();
-            pin2.low();
-            pin3.low();
-            pin4.low();
+            pin1.high();
+            pin2.high();
+            pin3.high();
+            pin4.high();
             try{TimeUnit.SECONDS.sleep(1);} catch(InterruptedException e){}
             System.out.println("Gpio 1, 2, 3, 4 wurden initialisiert und sind nun bereit benutzt zu werden");
         }
         else
         {
-            pin1.low();
-            pin2.low();
-            pin3.low();
-            pin4.low();
+            pin1.high();
+            pin2.high();
+            pin3.high();
+            pin4.high();
         }
 
         return "Die Pins wurden initialisiert!";
@@ -120,15 +120,15 @@ public class KeimgeraetController {
             for (int i = p1wZyklen; i >= 1; i--) {
                 while (true) { //pin4.isHigh()
                     try {
-                        pin1.high();
-                        pin2.high();
+                        pin1.low();
+                        pin2.low();
                         try {
                             System.out.println("Das Wasser wurde für " + p1wDauer + " Sekunden angeschalten!");
                             TimeUnit.SECONDS.sleep(p1wDauer);
                         } catch (InterruptedException e) {
                         }
-                        pin1.low();
-                        pin2.low();
+                        pin1.high();
+                        pin2.high();
                         try {
                             System.out.println("Das Wasser wurde für " + p1wAlleXSekunden + "( ca. " + p1wAlleXSekunden / 60 + " Minuten )" + " Sekunden ausgeschalten!");
                             TimeUnit.SECONDS.sleep(p1wAlleXSekunden);
@@ -146,13 +146,13 @@ public class KeimgeraetController {
     Thread Phase1TrommelThread = new Thread(){
         public void run() {
                 for (int i = p1tZyklen; i >= 1; i--) {
-                    pin2.high();
+                    pin2.low();
                     try {
                         System.out.println("Die Trommel ist für " + p1tDauer + " Sekunden angeschalten");
                         TimeUnit.SECONDS.sleep(p1tDauer);
                     } catch (InterruptedException e) {
                     }
-                    pin2.low();
+                    pin2.high();
                     try {
                         System.out.println("Die Trommel ist für " + p1tAlleXSekunden + "( ca. " + p1tAlleXSekunden/60 + " Minuten )" + " Sekunden ausgeschalten");
                         TimeUnit.SECONDS.sleep(p1tAlleXSekunden);
@@ -167,20 +167,21 @@ public class KeimgeraetController {
             for (int i = p2wZyklen; i >= 1; i--) {
                 while(true) { //pin4.isHigh()
                     try {
-                        pin1.high();
-                        pin2.high();
+                        pin1.low();
+                        pin2.low();
                         try {
                             System.out.println("Das Wasser ist für " + p2wDauer + " Sekunden angeschalten");
-                            TimeUnit.SECONDS.sleep(p2wDauer - (p2wDauer+3600));
-                            pin3.high();
-                            TimeUnit.SECONDS.sleep(1800);
-                            pin3.low();
-                            TimeUnit.SECONDS.sleep((p2wDauer - 5400));
+                            TimeUnit.SECONDS.sleep((p2wDauer));
+                           // TimeUnit.SECONDS.sleep(p2wDauer - (p2wDauer+3600));
+                            //pin3.high();
+                            //TimeUnit.SECONDS.sleep(1800);
+                            //pin3.high();
+                            //TimeUnit.SECONDS.sleep((p2wDauer - 5400));
                         } catch (InterruptedException e) {
                         }
 
-                        pin1.low();
-                        pin2.low();
+                        pin1.high();
+                        pin2.high();
                         try {
                             System.out.println("Das Wasser ist für " + p2wAlleXSekunden + "( ca. " + p2wAlleXSekunden / 60 + " Minuten )" + " Sekunden ausgeschalten");
                             TimeUnit.SECONDS.sleep(p2wAlleXSekunden);
@@ -197,13 +198,13 @@ public class KeimgeraetController {
     Thread Phase2TrommelThread = new Thread(){
         public void run() {
             for (int i = p2tZyklen; i >= 1; i--) {
-                pin2.high();
+                pin2.low();
                 try {
                     System.out.println("Die Trommel ist für " + p2tDauer + " Sekunden angeschalten");
                     TimeUnit.SECONDS.sleep(p2tDauer);
                 } catch (InterruptedException e) {
                 }
-                pin2.low();
+                pin2.high();
                 try {
                     System.out.println("Die Trommel ist für " + p2tAlleXSekunden + "( ca. " + p2tAlleXSekunden/60 + " Minuten )" + " Sekunden ausgeschalten");
                     TimeUnit.SECONDS.sleep(p2tAlleXSekunden);
@@ -216,19 +217,18 @@ public class KeimgeraetController {
     Thread Phase2LuftThread = new Thread(){
         public void run() {
             for(int i = p2lZyklus; i >= 1; i--) {
-                pin3.low();
+                pin3.high();
                 try {
                     System.out.println("Die Luft ist für " + p2lAlleXSekunden + "( ca. " + p2lAlleXSekunden/60 + " Minuten )" + " Sekunden ausgeschalten");
                     TimeUnit.SECONDS.sleep(p2lAlleXSekunden);
                 } catch (InterruptedException e) {
                 }
-                pin3.high();
+                pin3.low();
                 try {
                     System.out.println("Die Luft ist für " + p2lDauer + "( ca. " + p2lDauer/60 + " Minuten )" + " Sekunden ausgeschalten");
                     TimeUnit.SECONDS.sleep(p2lDauer);
                 } catch (InterruptedException e) {
                 }
-                pin3.low();
             }
         }
     };
@@ -289,10 +289,10 @@ public class KeimgeraetController {
     @RequestMapping ("/exit")
     public void aus()
     {
-        pin1.low();
-        pin2.low();
-        pin3.low();
-        pin4.low();
+        pin1.high();
+        pin2.high();
+        pin3.high();
+        pin4.high();
         System.exit(0);
     }
     public void whereAmI(String x)
